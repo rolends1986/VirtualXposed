@@ -122,7 +122,7 @@ __BEGIN_DECLS
 
 #define FREE(ptr, org_ptr) { if ((void*) ptr != NULL && (void*) ptr != (void*) org_ptr) { free((void*) ptr); } }
 
-
+#ifdef __aarch64__
 
 // int fstatat64(int dirfd, const char *pathname, struct stat *buf, int flags);
 HOOK_DEF(int, fstatat64, int dirfd, const char *pathname, struct stat *buf, int flags) {
@@ -132,6 +132,17 @@ HOOK_DEF(int, fstatat64, int dirfd, const char *pathname, struct stat *buf, int 
     FREE(redirect_path, pathname);
     return ret;
 }
+
+#else
+// int faccessat(int dirfd, const char *pathname, int mode, int flags);
+HOOK_DEF(int, faccessat, int dirfd, const char *pathname, int mode, int flags) {
+    int res;
+    const char *redirect_path = relocate_path(pathname, &res);
+    int ret = syscall(__NR_faccessat, dirfd, redirect_path, mode, flags);
+    FREE(redirect_path, pathname);
+    return ret;
+}
+#endif
 
 
 // int mknodat(int dirfd, const char *pathname, mode_t mode, dev_t dev);
@@ -518,7 +529,12 @@ void IOUniformer::startUniformer(const char *so_path, int api_level, int preview
     if (handle) {
         HOOK_SYMBOL(handle, fchownat);
         HOOK_SYMBOL(handle, renameat);
+
+#ifdef __aarch64__
         HOOK_SYMBOL(handle, fstatat64);
+#else
+        HOOK_SYMBOL(handle, faccessat);
+#endif
         HOOK_SYMBOL(handle, __statfs);
         HOOK_SYMBOL(handle, mkdirat);
         HOOK_SYMBOL(handle, mknodat);

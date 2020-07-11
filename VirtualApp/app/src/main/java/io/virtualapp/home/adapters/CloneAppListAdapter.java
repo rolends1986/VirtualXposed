@@ -107,7 +107,8 @@ public class CloneAppListAdapter extends DragSelectRecyclerViewAdapter<CloneAppL
         holder.itemView.setOnClickListener(v -> {
             mItemEventListener.onItemClick(info, position);
         });
-        holder.itemView.setEnabled(info.is64bit);
+
+        //holder.itemView.setEnabled(info.is64bit);
     }
 
     @Override
